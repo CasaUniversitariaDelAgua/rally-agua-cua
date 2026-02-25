@@ -33,7 +33,7 @@ export const POST: APIRoute = async ({ request }) => {
 
         // ── Límite de 10 equipos ──────────────────────────────────────
         const { count, error: countError } = await supabase
-            .from("registrations")
+            .from("registros")
             .select("*", { count: "exact", head: true });
 
         if (countError) {
@@ -55,18 +55,18 @@ export const POST: APIRoute = async ({ request }) => {
         }
         // ─────────────────────────────────────────────────────────────
 
-        const { error } = await supabase.from("registrations").insert([
+        const { error } = await supabase.from("registros").insert([
             {
-                team_name: team_name.trim(),
-                representative: representative.trim(),
-                phone: phone.trim(),
-                email: email.trim().toLowerCase(),
-                members: members.trim(),
-                how_heard: how_heard.trim(),
-                institution: institution.trim(),
-                experience: experience.trim(),
-                special_needs: special_needs.trim(),
-                comments: comments?.trim() ?? null,
+                nombre_equipo: team_name.trim(),
+                representante: representative.trim(),
+                teléfono: phone.trim(),
+                "correo electrónico": email.trim().toLowerCase(),
+                miembros: members.trim(),
+                "cómo_escuchó": how_heard.trim(),
+                institución: institution.trim(),
+                experiencia: experience.trim(),
+                necesidades_especiales: special_needs.trim(),
+                comentarios: comments?.trim() ?? null,
             },
         ]);
 

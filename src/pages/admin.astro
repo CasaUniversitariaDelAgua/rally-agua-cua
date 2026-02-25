@@ -1,15 +1,34 @@
 ---
-// src/pages/admin.astro  —  Panel de control para encargados
-import BaseLayout from '../layouts/BaseLayout.astro';
-import { mockTeams, PHASES, totalScore } from '../lib/mockData';
+// src/pages/admin.astro  —  Panel de control
+import BaseLayout from "../layouts/BaseLayout.astro";
+import { PHASES, totalScore } from "../lib/mockData";
+import { supabase } from "../db/supabase.js";
 
-const teams = mockTeams;
+// ── Fetch teams + scores from Supabase ──────────────────────────
+const { data: rawTeams, error } = await supabase
+  .from("teams")
+  .select("id, name, color, members, scores(phase_id, status, points)")
+  .order("id");
+
+if (error) console.error("Admin fetch error:", error);
+
+const teams = (rawTeams ?? []).map((row: any) => ({
+  id: row.id,
+  name: row.name,
+  color: row.color,
+  members: Array.isArray(row.members) ? row.members : [],
+  phases: [1, 2, 3, 4, 5].map((phaseId) => {
+    const s = (row.scores ?? []).find((sc: any) => sc.phase_id === phaseId);
+    return { phaseId, status: s?.status ?? "pending", points: s?.points ?? 0 };
+  }),
+}));
+
+// Serialize for client script
+const teamsJson = JSON.stringify(teams);
 ---
 
 <BaseLayout title="Panel Admin" activePage="admin">
-
   <div class="admin-view">
-
     <!-- ── HEADER ── -->
     <header class="admin-header">
       <div>
@@ -18,8 +37,20 @@ const teams = mockTeams;
       </div>
       <div class="header-actions">
         <button class="btn btn-export" id="btn-export">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
-            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/>
+          <svg
+            width="14"
+            height="14"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2.5"
+          >
+            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline
+              points="7 10 12 15 17 10"></polyline><line
+              x1="12"
+              y1="15"
+              x2="12"
+              y2="3"></line>
           </svg>
           Exportar Excel
         </button>
@@ -32,11 +63,20 @@ const teams = mockTeams;
     <!-- ── PHASE FILTER ── -->
     <div class="filter-block">
       <span class="filter-label">Filtrar fase</span>
-      <div class="phase-btns" id="phase-filter" role="group" aria-label="Filtro de fases">
+      <div
+        class="phase-btns"
+        id="phase-filter"
+        role="group"
+        aria-label="Filtro de fases"
+      >
         <button class="phase-btn active" data-phase="all">Todas</button>
-        {PHASES.map(p => (
-          <button class="phase-btn" data-phase={p.id}>{p.name}</button>
-        ))}
+        {
+          PHASES.map((p) => (
+            <button class="phase-btn" data-phase={p.id}>
+              {p.name}
+            </button>
+          ))
+        }
       </div>
     </div>
 
@@ -59,26 +99,52 @@ const teams = mockTeams;
       </table>
     </div>
 
-    <p class="table-note">* Los cambios se reflejan en el marcador público al guardar.</p>
-
+    <p class="table-note">
+      * Los cambios se guardan en Supabase y se reflejan en el marcador público
+      al instante.
+    </p>
   </div>
 
   <!-- ── MODAL REGISTRAR EQUIPO ── -->
-  <div class="modal-overlay" id="modal-register" aria-modal="true" role="dialog" aria-labelledby="modal-title">
+  <div
+    class="modal-overlay"
+    id="modal-register"
+    aria-modal="true"
+    role="dialog"
+    aria-labelledby="modal-title"
+  >
     <div class="modal">
       <h2 class="modal-title" id="modal-title">Registrar Equipo</h2>
       <div class="form-grid">
         <div class="form-group">
           <label class="form-label" for="input-name">Nombre del equipo</label>
-          <input class="form-input" id="input-name" type="text" placeholder="Ej. Los Relámpagos" autocomplete="off" />
+          <input
+            class="form-input"
+            id="input-name"
+            type="text"
+            placeholder="Ej. Los Relámpagos"
+            autocomplete="off"
+          />
         </div>
         <div class="form-group">
-          <label class="form-label" for="input-members">Miembros <small>(separados por coma)</small></label>
-          <input class="form-input" id="input-members" type="text" placeholder="Ana, Carlos, Luis, María, Pedro" />
+          <label class="form-label" for="input-members"
+            >Miembros <small>(separados por coma)</small></label
+          >
+          <input
+            class="form-input"
+            id="input-members"
+            type="text"
+            placeholder="Ana, Carlos, Luis, María, Pedro"
+          />
         </div>
         <div class="form-group">
           <label class="form-label" for="input-color">Color del equipo</label>
-          <input class="form-input form-color" id="input-color" type="color" value="#E8531A" />
+          <input
+            class="form-input form-color"
+            id="input-color"
+            type="color"
+            value="#E8531A"
+          />
         </div>
       </div>
       <div class="form-actions">
@@ -90,47 +156,53 @@ const teams = mockTeams;
 
   <!-- ── TOAST ── -->
   <div class="toast-area" id="toast-area" aria-live="polite"></div>
-
 </BaseLayout>
 
-<!-- ═══════════════════════════════════════════════════════
-     CLIENT-SIDE LOGIC
-     (En producción esto va dentro de un componente React
-      que usa el cliente de Supabase para persistir)
-══════════════════════════════════════════════════════════ -->
-<script>
-import { mockTeams, PHASES, totalScore } from '../lib/mockData.ts';
-import type { Team } from '../lib/mockData.ts';
+<script define:vars={{ teamsJson, PHASES }}>
+  // ── State from Supabase SSR ───────────────────────────────────────
+  let teams = JSON.parse(teamsJson);
+  let activePhaseFilter = "all";
 
-// ── State (mock — en producción viene de Supabase) ──────
-let teams: Team[] = JSON.parse(JSON.stringify(mockTeams)); // deep clone
-let activePhaseFilter: 'all' | number = 'all';
+  function totalScore(team) {
+    return team.phases.reduce((sum, p) => sum + p.points, 0);
+  }
 
-// ── Helpers ─────────────────────────────────────────────
-function getDisplayPhaseIdx(team: Team): number {
-  if (activePhaseFilter !== 'all') return (activePhaseFilter as number) - 1;
-  const doingIdx = team.phases.findIndex(p => p.status === 'doing');
-  if (doingIdx >= 0) return doingIdx;
-  const lastDone = [...team.phases].map((p,i) => ({...p,i})).filter(p=>p.status==='done').at(-1);
-  return lastDone ? lastDone.i : 0;
-}
+  // ── Helpers ──────────────────────────────────────────────────────
+  function getDisplayPhaseIdx(team) {
+    if (activePhaseFilter !== "all") return activePhaseFilter - 1;
+    const doingIdx = team.phases.findIndex((p) => p.status === "doing");
+    if (doingIdx >= 0) return doingIdx;
+    const lastDone = [...team.phases]
+      .map((p, i) => ({ ...p, i }))
+      .filter((p) => p.status === "done")
+      .at(-1);
+    return lastDone ? lastDone.i : 0;
+  }
 
-// ── Render table ─────────────────────────────────────────
-function renderTable() {
-  const tbody = document.getElementById('admin-tbody')!;
-  const thPhase = document.getElementById('th-phase')!;
+  // ── Render table ─────────────────────────────────────────────────
+  function renderTable() {
+    const tbody = document.getElementById("admin-tbody");
+    const thPhase = document.getElementById("th-phase");
 
-  thPhase.textContent = activePhaseFilter === 'all'
-    ? 'Fase activa'
-    : PHASES[(activePhaseFilter as number) - 1].name;
+    thPhase.textContent =
+      activePhaseFilter === "all"
+        ? "Fase activa"
+        : PHASES[activePhaseFilter - 1].name;
 
-  tbody.innerHTML = teams.map(team => {
-    const pi    = getDisplayPhaseIdx(team);
-    const phase = team.phases[pi];
-    const pname = PHASES[pi].name;
-    const total = totalScore(team);
+    if (teams.length === 0) {
+      tbody.innerHTML =
+        '<tr><td colspan="6" style="text-align:center;padding:2rem;opacity:0.5;font-family:Barlow Condensed,sans-serif;letter-spacing:0.1em">No hay equipos registrados en Supabase.</td></tr>';
+      return;
+    }
 
-    return `
+    tbody.innerHTML = teams
+      .map((team) => {
+        const pi = getDisplayPhaseIdx(team);
+        const phase = team.phases[pi];
+        const pname = PHASES[pi].name;
+        const total = totalScore(team);
+
+        return `
     <tr data-team="${team.id}">
       <td>
         <div class="team-cell">
@@ -141,9 +213,9 @@ function renderTable() {
       <td class="phase-name-cell">${pname}</td>
       <td>
         <select class="status-select" data-team="${team.id}" data-phase="${phase.phaseId}">
-          <option value="pending" ${phase.status==='pending'?'selected':''}>Pendiente</option>
-          <option value="doing"   ${phase.status==='doing'  ?'selected':''}>En curso</option>
-          <option value="done"    ${phase.status==='done'   ?'selected':''}>Completado</option>
+          <option value="pending" ${phase.status === "pending" ? "selected" : ""}>Pendiente</option>
+          <option value="doing"   ${phase.status === "doing" ? "selected" : ""}>En curso</option>
+          <option value="done"    ${phase.status === "done" ? "selected" : ""}>Completado</option>
         </select>
       </td>
       <td>
@@ -162,137 +234,225 @@ function renderTable() {
         <button class="btn btn-save btn-sm save-btn" data-team="${team.id}">Guardar</button>
       </td>
     </tr>`;
-  }).join('');
+      })
+      .join("");
 
-  attachTableListeners();
-}
+    attachTableListeners();
+  }
 
-function attachTableListeners() {
-  // Points input → update running total
-  document.querySelectorAll<HTMLInputElement>('.pts-input').forEach(input => {
-    input.addEventListener('input', () => {
-      const tid = Number(input.dataset.team);
-      const pid = Number(input.dataset.phase);
-      const team = teams.find(t => t.id === tid)!;
-      team.phases.find(p => p.phaseId === pid)!.points = Number(input.value) || 0;
-      const el = document.getElementById(`total-${tid}`);
-      if (el) el.textContent = String(totalScore(team));
+  function attachTableListeners() {
+    // Points input → update running total live
+    document.querySelectorAll(".pts-input").forEach((input) => {
+      input.addEventListener("input", () => {
+        const tid = Number(input.dataset.team);
+        const pid = Number(input.dataset.phase);
+        const team = teams.find((t) => t.id === tid);
+        team.phases.find((p) => p.phaseId === pid).points =
+          Number(input.value) || 0;
+        const el = document.getElementById(`total-${tid}`);
+        if (el) el.textContent = String(totalScore(team));
+      });
     });
+
+    // Status select
+    document.querySelectorAll(".status-select").forEach((sel) => {
+      sel.addEventListener("change", () => {
+        const tid = Number(sel.dataset.team);
+        const pid = Number(sel.dataset.phase);
+        const team = teams.find((t) => t.id === tid);
+        team.phases.find((p) => p.phaseId === pid).status = sel.value;
+      });
+    });
+
+    // Save button → call /api/update-score
+    document.querySelectorAll(".save-btn").forEach((btn) => {
+      btn.addEventListener("click", async () => {
+        const tid = Number(btn.dataset.team);
+        const team = teams.find((t) => t.id === tid);
+        const pi = getDisplayPhaseIdx(team);
+        const phase = team.phases[pi];
+
+        btn.textContent = "…";
+        btn.disabled = true;
+
+        try {
+          const res = await fetch("/api/update-score", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              team_id: tid,
+              id_fase: phase.phaseId,
+              estatus: phase.status,
+              puntos: phase.points,
+            }),
+          });
+          const data = await res.json();
+          if (!res.ok) {
+            showToast("Error: " + (data.error ?? "Intenta de nuevo"), "error");
+          } else {
+            btn.textContent = "✓ Guardado";
+            btn.classList.add("saved");
+            showToast(`${team.name} — Fase ${phase.phaseId} guardada`);
+            setTimeout(() => {
+              btn.textContent = "Guardar";
+              btn.classList.remove("saved");
+              btn.disabled = false;
+            }, 2000);
+            return;
+          }
+        } catch {
+          showToast("Error de red. Intenta de nuevo.", "error");
+        }
+
+        btn.textContent = "Guardar";
+        btn.disabled = false;
+      });
+    });
+  }
+
+  // ── Phase filter ──────────────────────────────────────────────────
+  document.getElementById("phase-filter").addEventListener("click", (e) => {
+    const target = e.target;
+    if (!target.classList.contains("phase-btn")) return;
+    document
+      .querySelectorAll(".phase-btn")
+      .forEach((b) => b.classList.remove("active"));
+    target.classList.add("active");
+    activePhaseFilter =
+      target.dataset.phase === "all" ? "all" : Number(target.dataset.phase);
+    renderTable();
   });
 
-  // Status select
-  document.querySelectorAll<HTMLSelectElement>('.status-select').forEach(sel => {
-    sel.addEventListener('change', () => {
-      const tid = Number(sel.dataset.team);
-      const pid = Number(sel.dataset.phase);
-      const team = teams.find(t => t.id === tid)!;
-      team.phases.find(p => p.phaseId === pid)!.status = sel.value as any;
-    });
+  // ── Register modal ────────────────────────────────────────────────
+  const modal = document.getElementById("modal-register");
+
+  document.getElementById("btn-register").addEventListener("click", () => {
+    modal.classList.add("open");
+    document.getElementById("input-name").focus();
   });
 
-  // Save button
-  document.querySelectorAll<HTMLButtonElement>('.save-btn').forEach(btn => {
-    btn.addEventListener('click', () => {
-      const tid = Number(btn.dataset.team);
-      const team = teams.find(t => t.id === tid)!;
-      // TODO: await supabase.from('scores').upsert([...team.phases])
-      btn.textContent = '✓ Guardado';
-      btn.classList.add('saved');
-      setTimeout(() => { btn.textContent = 'Guardar'; btn.classList.remove('saved'); }, 2000);
-      showToast(`${team.name} actualizado`);
-    });
+  document
+    .getElementById("btn-modal-cancel")
+    .addEventListener("click", () => modal.classList.remove("open"));
+  modal.addEventListener("click", (e) => {
+    if (e.target === modal) modal.classList.remove("open");
   });
-}
 
-// ── Phase filter ─────────────────────────────────────────
-document.getElementById('phase-filter')!.addEventListener('click', e => {
-  const target = e.target as HTMLButtonElement;
-  if (!target.classList.contains('phase-btn')) return;
-  document.querySelectorAll('.phase-btn').forEach(b => b.classList.remove('active'));
-  target.classList.add('active');
-  activePhaseFilter = target.dataset.phase === 'all' ? 'all' : Number(target.dataset.phase);
+  document
+    .getElementById("btn-modal-save")
+    .addEventListener("click", async () => {
+      const nameEl = document.getElementById("input-name");
+      const membersEl = document.getElementById("input-members");
+      const colorEl = document.getElementById("input-color");
+
+      const name = nameEl.value.trim();
+      if (!name) {
+        nameEl.focus();
+        return;
+      }
+
+      const members = membersEl.value
+        .split(",")
+        .map((m) => m.trim())
+        .filter(Boolean);
+      const saveBtn = document.getElementById("btn-modal-save");
+      saveBtn.textContent = "Guardando…";
+      saveBtn.disabled = true;
+
+      try {
+        const res = await fetch("/api/create-team", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            nombre: name,
+            color: colorEl.value,
+            miembros: members,
+          }),
+        });
+        const data = await res.json();
+        if (!res.ok) {
+          showToast("Error: " + (data.error ?? "Intenta de nuevo"), "error");
+        } else {
+          // Add to local state
+          teams.push({
+            id: data.id,
+            name,
+            color: colorEl.value,
+            members,
+            phases: [1, 2, 3, 4, 5].map((id) => ({
+              phaseId: id,
+              status: "pending",
+              points: 0,
+            })),
+          });
+          modal.classList.remove("open");
+          nameEl.value = "";
+          membersEl.value = "";
+          renderTable();
+          showToast(`Equipo "${name}" registrado`);
+        }
+      } catch {
+        showToast("Error de red.", "error");
+      }
+
+      saveBtn.textContent = "Registrar";
+      saveBtn.disabled = false;
+    });
+
+  // ── Export Excel ──────────────────────────────────────────────────
+  document.getElementById("btn-export").addEventListener("click", async () => {
+    const XLSX =
+      await import("https://cdn.sheetjs.com/xlsx-0.20.2/package/xlsx.mjs");
+    const wb = XLSX.utils.book_new();
+
+    const sorted = [...teams].sort((a, b) => totalScore(b) - totalScore(a));
+    const rows1 = [
+      ["Pos", "Equipo", "Miembros", ...PHASES.map((p) => p.name), "Total"],
+    ];
+    sorted.forEach((t, i) =>
+      rows1.push([
+        i + 1,
+        t.name,
+        t.members.join(", "),
+        ...t.phases.map((p) => p.points),
+        totalScore(t),
+      ]),
+    );
+    XLSX.utils.book_append_sheet(
+      wb,
+      XLSX.utils.aoa_to_sheet(rows1),
+      "Clasificación",
+    );
+
+    const rows2 = [["Equipo", "Fase", "Estado", "Puntos"]];
+    teams.forEach((t) =>
+      t.phases.forEach((p, i) =>
+        rows2.push([t.name, PHASES[i].name, p.status, p.points]),
+      ),
+    );
+    XLSX.utils.book_append_sheet(
+      wb,
+      XLSX.utils.aoa_to_sheet(rows2),
+      "Detalle Fases",
+    );
+
+    XLSX.writeFile(wb, `rally-${new Date().toISOString().slice(0, 10)}.xlsx`);
+    showToast("Excel exportado");
+  });
+
+  // ── Toast ─────────────────────────────────────────────────────────
+  function showToast(msg, type = "success") {
+    const area = document.getElementById("toast-area");
+    const t = document.createElement("div");
+    t.className = "toast" + (type === "error" ? " toast-error" : "");
+    t.textContent = (type === "error" ? "⚠ " : "✓ ") + msg;
+    area.appendChild(t);
+    setTimeout(() => t.classList.add("toast-out"), 2600);
+    setTimeout(() => t.remove(), 3000);
+  }
+
+  // ── Init ──────────────────────────────────────────────────────────
   renderTable();
-});
-
-// ── Register modal ───────────────────────────────────────
-const modal = document.getElementById('modal-register')!;
-
-document.getElementById('btn-register')!.addEventListener('click', () => {
-  modal.classList.add('open');
-  (document.getElementById('input-name') as HTMLInputElement).focus();
-});
-
-document.getElementById('btn-modal-cancel')!.addEventListener('click', () => modal.classList.remove('open'));
-
-modal.addEventListener('click', e => { if (e.target === modal) modal.classList.remove('open'); });
-
-document.getElementById('btn-modal-save')!.addEventListener('click', () => {
-  const nameEl    = document.getElementById('input-name')    as HTMLInputElement;
-  const membersEl = document.getElementById('input-members') as HTMLInputElement;
-  const colorEl   = document.getElementById('input-color')   as HTMLInputElement;
-
-  const name = nameEl.value.trim();
-  if (!name) { nameEl.focus(); return; }
-
-  const members = membersEl.value.split(',').map(m => m.trim()).filter(Boolean);
-  const newId   = Math.max(...teams.map(t => t.id)) + 1;
-
-  teams.push({
-    id: newId, name, color: colorEl.value, members,
-    phases: PHASES.map(p => ({ phaseId: p.id, status: 'pending', points: 0 })),
-  });
-
-  // TODO: await supabase.from('teams').insert({ name, color, members })
-  modal.classList.remove('open');
-  nameEl.value = ''; membersEl.value = '';
-  renderTable();
-  showToast(`Equipo "${name}" registrado`);
-});
-
-// ── Export Excel ─────────────────────────────────────────
-document.getElementById('btn-export')!.addEventListener('click', async () => {
-  // Dynamic import for xlsx
-  const XLSX = await import('https://cdn.sheetjs.com/xlsx-0.20.2/package/xlsx.mjs' as any);
-
-  const wb = XLSX.utils.book_new();
-
-  // Sheet 1 — Clasificación
-  const sorted = [...teams].sort((a,b) => totalScore(b)-totalScore(a));
-  const rows1 = [['Pos','Equipo','Miembros',...PHASES.map(p=>p.name),'Total']];
-  sorted.forEach((t,i) => {
-    rows1.push([i+1, t.name, t.members.join(', '), ...t.phases.map(p=>p.points), totalScore(t)] as any);
-  });
-  XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(rows1), 'Clasificación');
-
-  // Sheet 2 — Detalle fases
-  const rows2 = [['Equipo','Fase','Estado','Puntos']];
-  teams.forEach(t => t.phases.forEach((p,i) => {
-    rows2.push([t.name, PHASES[i].name, p.status, p.points] as any);
-  }));
-  XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(rows2), 'Detalle Fases');
-
-  // Sheet 3 — Equipos
-  const rows3 = [['Equipo','Color',...Array.from({length:5},(_,i)=>`Miembro ${i+1}`)]];
-  teams.forEach(t => rows3.push([t.name, t.color, ...t.members] as any));
-  XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(rows3), 'Equipos');
-
-  XLSX.writeFile(wb, `rally-${new Date().toISOString().slice(0,10)}.xlsx`);
-  showToast('Excel exportado');
-});
-
-// ── Toast ─────────────────────────────────────────────────
-function showToast(msg: string) {
-  const area = document.getElementById('toast-area')!;
-  const t = document.createElement('div');
-  t.className = 'toast';
-  t.textContent = `✓ ${msg}`;
-  area.appendChild(t);
-  setTimeout(() => t.classList.add('toast-out'), 2600);
-  setTimeout(() => t.remove(), 3000);
-}
-
-// ── Init ──────────────────────────────────────────────────
-renderTable();
 </script>
 
 <style>
@@ -314,9 +474,8 @@ renderTable();
     padding-bottom: 1.2rem;
     border-bottom: 1px solid rgba(196, 163, 90, 0.18);
   }
-
   .admin-eyebrow {
-    font-family: 'Barlow Condensed', sans-serif;
+    font-family: "Barlow Condensed", sans-serif;
     font-size: 0.72rem;
     font-weight: 700;
     letter-spacing: 0.28em;
@@ -324,19 +483,22 @@ renderTable();
     color: var(--dirt);
     margin-bottom: 0.25rem;
   }
-
   .admin-title {
-    font-family: 'Bebas Neue', sans-serif;
+    font-family: "Bebas Neue", sans-serif;
     font-size: 2.4rem;
     letter-spacing: 0.08em;
     color: var(--sand);
   }
-
-  .header-actions { display: flex; gap: 0.6rem; flex-wrap: wrap; align-items: center; }
+  .header-actions {
+    display: flex;
+    gap: 0.6rem;
+    flex-wrap: wrap;
+    align-items: center;
+  }
 
   /* ── Buttons ── */
   .btn {
-    font-family: 'Barlow Condensed', sans-serif;
+    font-family: "Barlow Condensed", sans-serif;
     font-size: 0.82rem;
     font-weight: 700;
     letter-spacing: 0.15em;
@@ -350,21 +512,53 @@ renderTable();
     gap: 0.4rem;
     transition: all 0.18s;
   }
-
-  .btn-primary { background: var(--dirt); color: var(--ink); }
-  .btn-primary:hover { background: var(--sand); transform: translateY(-1px); box-shadow: 0 4px 14px rgba(196,163,90,0.3); }
-
-  .btn-export  { background: transparent; color: var(--moss-light); border: 1px solid var(--moss-light); }
-  .btn-export:hover { background: rgba(74,92,58,0.25); }
-
-  .btn-ghost   { background: transparent; color: var(--fog); border: 1px solid rgba(255,255,255,0.15); opacity: 0.7; }
-  .btn-ghost:hover { opacity: 1; }
-
-  .btn-save    { background: var(--moss); color: var(--ash); border: 1px solid var(--moss-light); }
-  .btn-save:hover { background: var(--moss-light); color: var(--ink); }
-  .btn-save.saved { background: rgba(74,92,58,0.4); color: var(--moss-light); }
-
-  .btn-sm { padding: 0.38rem 0.9rem; font-size: 0.75rem; }
+  .btn-primary {
+    background: var(--dirt);
+    color: var(--ink);
+  }
+  .btn-primary:hover {
+    background: var(--sand);
+    transform: translateY(-1px);
+    box-shadow: 0 4px 14px rgba(196, 163, 90, 0.3);
+  }
+  .btn-export {
+    background: transparent;
+    color: var(--moss-light);
+    border: 1px solid var(--moss-light);
+  }
+  .btn-export:hover {
+    background: rgba(74, 92, 58, 0.25);
+  }
+  .btn-ghost {
+    background: transparent;
+    color: var(--fog);
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    opacity: 0.7;
+  }
+  .btn-ghost:hover {
+    opacity: 1;
+  }
+  .btn-save {
+    background: var(--moss);
+    color: var(--ash);
+    border: 1px solid var(--moss-light);
+  }
+  .btn-save:hover {
+    background: var(--moss-light);
+    color: var(--ink);
+  }
+  .btn-save.saved {
+    background: rgba(74, 92, 58, 0.4);
+    color: var(--moss-light);
+  }
+  .btn-sm {
+    padding: 0.38rem 0.9rem;
+    font-size: 0.75rem;
+  }
+  .btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
 
   /* ── Phase filter ── */
   .filter-block {
@@ -374,9 +568,8 @@ renderTable();
     margin-bottom: 1.2rem;
     flex-wrap: wrap;
   }
-
   .filter-label {
-    font-family: 'Barlow Condensed', sans-serif;
+    font-family: "Barlow Condensed", sans-serif;
     font-size: 0.7rem;
     font-weight: 700;
     letter-spacing: 0.2em;
@@ -384,11 +577,13 @@ renderTable();
     color: var(--dirt);
     flex-shrink: 0;
   }
-
-  .phase-btns { display: flex; gap: 0.35rem; flex-wrap: wrap; }
-
+  .phase-btns {
+    display: flex;
+    gap: 0.35rem;
+    flex-wrap: wrap;
+  }
   .phase-btn {
-    font-family: 'Barlow Condensed', sans-serif;
+    font-family: "Barlow Condensed", sans-serif;
     font-size: 0.75rem;
     font-weight: 700;
     letter-spacing: 0.08em;
@@ -397,35 +592,39 @@ renderTable();
     border-radius: 2px;
     cursor: pointer;
     background: transparent;
-    border: 1px solid rgba(196,163,90,0.2);
+    border: 1px solid rgba(196, 163, 90, 0.2);
     color: var(--fog);
     transition: all 0.18s;
   }
-  .phase-btn:hover { border-color: var(--dirt); color: var(--dirt); }
-  .phase-btn.active { background: rgba(196,163,90,0.14); border-color: var(--dirt); color: var(--dirt); }
+  .phase-btn:hover {
+    border-color: var(--dirt);
+    color: var(--dirt);
+  }
+  .phase-btn.active {
+    background: rgba(196, 163, 90, 0.14);
+    border-color: var(--dirt);
+    color: var(--dirt);
+  }
 
   /* ── Table ── */
   .table-wrapper {
-    background: rgba(61,43,31,0.4);
-    border: 1px solid rgba(196,163,90,0.14);
+    background: rgba(61, 43, 31, 0.4);
+    border: 1px solid rgba(196, 163, 90, 0.14);
     border-radius: 4px;
     overflow: hidden;
     overflow-x: auto;
   }
-
   .admin-table {
     width: 100%;
     border-collapse: collapse;
     min-width: 620px;
   }
-
   .admin-table thead {
-    background: rgba(0,0,0,0.28);
-    border-bottom: 1px solid rgba(196,163,90,0.18);
+    background: rgba(0, 0, 0, 0.28);
+    border-bottom: 1px solid rgba(196, 163, 90, 0.18);
   }
-
   .admin-table th {
-    font-family: 'Barlow Condensed', sans-serif;
+    font-family: "Barlow Condensed", sans-serif;
     font-size: 0.68rem;
     font-weight: 700;
     letter-spacing: 0.2em;
@@ -435,81 +634,82 @@ renderTable();
     text-align: left;
     white-space: nowrap;
   }
-
   .admin-table td {
     padding: 0.85rem 1.1rem;
-    border-bottom: 1px solid rgba(255,255,255,0.04);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.04);
     vertical-align: middle;
   }
-
-  .admin-table tr:last-child td { border-bottom: none; }
-  .admin-table tr:hover td { background: rgba(196,163,90,0.03); }
-
+  .admin-table tr:last-child td {
+    border-bottom: none;
+  }
+  .admin-table tr:hover td {
+    background: rgba(196, 163, 90, 0.03);
+  }
   .team-cell {
     display: flex;
     align-items: center;
     gap: 0.6rem;
   }
-
   .team-dot {
-    width: 10px; height: 10px;
+    width: 10px;
+    height: 10px;
     border-radius: 50%;
     flex-shrink: 0;
   }
-
   .team-cell-name {
-    font-family: 'Barlow Condensed', sans-serif;
+    font-family: "Barlow Condensed", sans-serif;
     font-size: 1rem;
     font-weight: 700;
     letter-spacing: 0.04em;
     text-transform: uppercase;
     color: var(--ash);
   }
-
   .phase-name-cell {
-    font-family: 'Barlow Condensed', sans-serif;
+    font-family: "Barlow Condensed", sans-serif;
     font-size: 0.82rem;
     color: var(--fog);
     opacity: 0.65;
   }
-
   .status-select {
-    font-family: 'Barlow Condensed', sans-serif;
+    font-family: "Barlow Condensed", sans-serif;
     font-size: 0.8rem;
     font-weight: 600;
     letter-spacing: 0.06em;
     padding: 0.3rem 0.6rem;
-    background: rgba(0,0,0,0.3);
-    border: 1px solid rgba(196,163,90,0.22);
+    background: rgba(0, 0, 0, 0.3);
+    border: 1px solid rgba(196, 163, 90, 0.22);
     color: var(--fog);
     border-radius: 2px;
     cursor: pointer;
   }
-  .status-select:focus { outline: none; border-color: var(--dirt); }
-
+  .status-select:focus {
+    outline: none;
+    border-color: var(--dirt);
+  }
   .pts-input {
-    font-family: 'Bebas Neue', sans-serif;
+    font-family: "Bebas Neue", sans-serif;
     font-size: 1.35rem;
     width: 72px;
     padding: 0.25rem 0.45rem;
-    background: rgba(0,0,0,0.35);
-    border: 1px solid rgba(196,163,90,0.22);
+    background: rgba(0, 0, 0, 0.35);
+    border: 1px solid rgba(196, 163, 90, 0.22);
     color: var(--sand);
     text-align: center;
     border-radius: 2px;
   }
-  .pts-input:focus { outline: none; border-color: var(--dirt); }
-
+  .pts-input:focus {
+    outline: none;
+    border-color: var(--dirt);
+  }
   .total-display {
-    font-family: 'Bebas Neue', sans-serif;
+    font-family: "Bebas Neue", sans-serif;
     font-size: 1.5rem;
     color: var(--sand);
   }
-
   .table-note {
     font-size: 0.72rem;
-    color: rgba(196,163,90,0.35);
-    font-family: 'Barlow Condensed', sans-serif;
+    color: rgba(196, 163, 90, 0.35);
+    font-family: "Barlow Condensed", sans-serif;
     letter-spacing: 0.05em;
     margin-top: 0.75rem;
   }
@@ -518,7 +718,7 @@ renderTable();
   .modal-overlay {
     position: fixed;
     inset: 0;
-    background: rgba(0,0,0,0.68);
+    background: rgba(0, 0, 0, 0.68);
     backdrop-filter: blur(5px);
     z-index: 50;
     display: none;
@@ -526,52 +726,67 @@ renderTable();
     justify-content: center;
     padding: 1rem;
   }
-  .modal-overlay.open { display: flex; }
-
+  .modal-overlay.open {
+    display: flex;
+  }
   .modal {
     background: var(--earth);
-    border: 1px solid rgba(196,163,90,0.22);
+    border: 1px solid rgba(196, 163, 90, 0.22);
     border-top: 3px solid var(--dirt);
     padding: 2rem;
     width: 100%;
     max-width: 520px;
     border-radius: 4px;
-    box-shadow: 0 24px 60px rgba(0,0,0,0.5);
+    box-shadow: 0 24px 60px rgba(0, 0, 0, 0.5);
   }
-
   .modal-title {
-    font-family: 'Bebas Neue', sans-serif;
+    font-family: "Bebas Neue", sans-serif;
     font-size: 1.8rem;
     letter-spacing: 0.1em;
     color: var(--sand);
     margin-bottom: 1.4rem;
   }
-
-  .form-grid { display: flex; flex-direction: column; gap: 1rem; }
-  .form-group { display: flex; flex-direction: column; gap: 0.35rem; }
-
+  .form-grid {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+  }
+  .form-group {
+    display: flex;
+    flex-direction: column;
+    gap: 0.35rem;
+  }
   .form-label {
-    font-family: 'Barlow Condensed', sans-serif;
+    font-family: "Barlow Condensed", sans-serif;
     font-size: 0.72rem;
     font-weight: 700;
     letter-spacing: 0.18em;
     text-transform: uppercase;
     color: var(--dirt);
   }
-  .form-label small { text-transform: none; letter-spacing: 0; opacity: 0.6; }
-
+  .form-label small {
+    text-transform: none;
+    letter-spacing: 0;
+    opacity: 0.6;
+  }
   .form-input {
-    font-family: 'Barlow', sans-serif;
+    font-family: "Barlow", sans-serif;
     font-size: 0.95rem;
     padding: 0.6rem 0.85rem;
-    background: rgba(0,0,0,0.3);
-    border: 1px solid rgba(196,163,90,0.2);
+    background: rgba(0, 0, 0, 0.3);
+    border: 1px solid rgba(196, 163, 90, 0.2);
     color: var(--ash);
     border-radius: 2px;
   }
-  .form-input:focus { outline: none; border-color: var(--dirt); }
-  .form-color { height: 44px; cursor: pointer; padding: 0.25rem; }
-
+  .form-input:focus {
+    outline: none;
+    border-color: var(--dirt);
+  }
+  .form-color {
+    height: 44px;
+    cursor: pointer;
+    padding: 0.25rem;
+  }
   .form-actions {
     display: flex;
     gap: 0.7rem;
@@ -589,9 +804,8 @@ renderTable();
     flex-direction: column;
     gap: 0.45rem;
   }
-
   .toast {
-    font-family: 'Barlow Condensed', sans-serif;
+    font-family: "Barlow Condensed", sans-serif;
     font-size: 0.85rem;
     font-weight: 600;
     letter-spacing: 0.08em;
@@ -601,15 +815,28 @@ renderTable();
     border-left: 3px solid var(--moss-light);
     color: var(--ash);
     border-radius: 2px;
-    box-shadow: 0 4px 20px rgba(0,0,0,0.4);
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
     animation: toast-in 0.28s ease;
-    transition: opacity 0.35s, transform 0.35s;
+    transition:
+      opacity 0.35s,
+      transform 0.35s;
   }
-
-  .toast.toast-out { opacity: 0; transform: translateX(10px); }
-
+  .toast.toast-error {
+    border-color: var(--rust);
+    border-left-color: var(--rust);
+  }
+  .toast.toast-out {
+    opacity: 0;
+    transform: translateX(10px);
+  }
   @keyframes toast-in {
-    from { opacity: 0; transform: translateX(16px); }
-    to   { opacity: 1; transform: translateX(0); }
+    from {
+      opacity: 0;
+      transform: translateX(16px);
+    }
+    to {
+      opacity: 1;
+      transform: translateX(0);
+    }
   }
 </style>

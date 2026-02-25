@@ -1,147 +1,37 @@
 ---
-// src/pages/index.astro  —  Vista pública del marcador
+// src/pages/index.astro — Marcador en vivo
 import BaseLayout from "../layouts/BaseLayout.astro";
-import PhasePills from "../components/PhasePills.astro";
-import TeamCard from "../components/TeamCard.astro";
-import ProgressBars from "../components/ProgressBars.astro";
-import { mockTeams, getSortedTeams } from "../lib/mockDatas";
+import ScoreboardLive from "../components/ScoreboardLive";
+import { supabase } from "../db/supabase.js";
 
-// ── Cuando conectes Supabase, reemplaza esto por:
-// const { data: teams } = await supabase.from('teams').select('*, scores(*)');
-const teams = mockTeams;
-const sorted = getSortedTeams(teams);
+// ── Fetch inicial server-side (SSR) ──────────────────────────────────────────
+const { data: rawTeams, error } = await supabase
+  .from("teams")
+  .select("id, name, color, members, scores(phase_id, status, points)")
+  .order("id");
 
-const lastUpdate = new Date().toLocaleTimeString("es-MX", {
-  hour: "2-digit",
-  minute: "2-digit",
-});
+if (error) console.error("Error loading teams:", error);
+
+const initialTeams = (rawTeams ?? []).map((row: any) => ({
+  id: row.id,
+  name: row.name,
+  color: row.color,
+  members: Array.isArray(row.members) ? row.members : [],
+  phases: [1, 2, 3, 4, 5].map((phaseId) => {
+    const s = (row.scores ?? []).find((sc: any) => sc.phase_id === phaseId);
+    return {
+      phaseId,
+      status: s?.status ?? "pending",
+      points: s?.points ?? 0,
+    };
+  }),
+}));
 ---
 
 <BaseLayout title="Marcador" activePage="scoreboard">
-  <div class="scoreboard">
-    <!-- ── HEADER ── -->
-    <header class="hero">
-      <p class="hero-eyebrow">Temporada 2025 · 5 Equipos · 5 Fases</p>
-      <h1 class="hero-title">
-        RALLY <em>DE</em><br />COMPETENCIA
-      </h1>
-      <div class="hero-divider" aria-hidden="true"></div>
-      <p class="hero-update">
-        Última actualización: <time>{lastUpdate}</time>
-        <!-- Cuando tengas realtime, este texto se actualiza desde el cliente -->
-      </p>
-    </header>
-
-    <!-- ── FASES ── -->
-    <PhasePills teams={teams} />
-
-    <!-- ── RANKING ── -->
-    <section aria-label="Clasificación de equipos">
-      <ol class="ranking-list">
-        {
-          sorted.map((team, i) => (
-            <li>
-              <TeamCard team={team} rank={i + 1} />
-            </li>
-          ))
-        }
-      </ol>
-    </section>
-
-    <!-- ── PROGRESS ── -->
-    <ProgressBars teams={teams} />
-  </div>
-
   <!--
-    TODO (Supabase Realtime):
-    Agrega un componente React/isla que se suscriba a cambios:
-
-    <ScoreboardLive teams={teams} client:load />
-
-    Dentro del componente:
-    supabase.channel('scores')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'scores' }, handleUpdate)
-      .subscribe()
+    ScoreboardLive recibe los datos del SSR como prop inicial (hidratación rápida)
+    y luego se suscribe a Supabase Realtime para actualizaciones en vivo.
   -->
+  <ScoreboardLive initialTeams={initialTeams} client:load />
 </BaseLayout>
-
-<style>
-  .scoreboard {
-    max-width: 900px;
-    margin: 0 auto;
-    padding: 2.5rem 1.5rem 4rem;
-  }
-
-  /* ── Hero ── */
-  .hero {
-    text-align: center;
-    margin-bottom: 2.5rem;
-  }
-
-  .hero-eyebrow {
-    font-family: "Barlow Condensed", sans-serif;
-    font-size: 0.8rem;
-    font-weight: 600;
-    letter-spacing: 0.35em;
-    text-transform: uppercase;
-    color: var(--dirt);
-    margin-bottom: 0.6rem;
-  }
-
-  .hero-title {
-    font-family: "Bebas Neue", sans-serif;
-    font-size: clamp(3.5rem, 10vw, 7.5rem);
-    letter-spacing: 0.06em;
-    line-height: 0.9;
-    color: var(--sand);
-    text-shadow:
-      3px 3px 0 var(--dirt-dark),
-      6px 6px 0 rgba(0, 0, 0, 0.25);
-  }
-
-  .hero-title em {
-    font-style: normal;
-    color: var(--rust);
-  }
-
-  .hero-divider {
-    width: 100px;
-    height: 3px;
-    background: linear-gradient(90deg, transparent, var(--dirt), transparent);
-    margin: 1rem auto 0.6rem;
-  }
-
-  .hero-update {
-    font-family: "Barlow Condensed", sans-serif;
-    font-size: 0.72rem;
-    font-weight: 600;
-    letter-spacing: 0.12em;
-    text-transform: uppercase;
-    color: rgba(196, 163, 90, 0.35);
-  }
-
-  /* ── Ranking list ── */
-  .ranking-list {
-    list-style: none;
-    display: flex;
-    flex-direction: column;
-    gap: 0.65rem;
-    /* Stagger animation for each card */
-  }
-
-  .ranking-list li:nth-child(1) > :global(.team-card) {
-    animation-delay: 0.04s;
-  }
-  .ranking-list li:nth-child(2) > :global(.team-card) {
-    animation-delay: 0.09s;
-  }
-  .ranking-list li:nth-child(3) > :global(.team-card) {
-    animation-delay: 0.14s;
-  }
-  .ranking-list li:nth-child(4) > :global(.team-card) {
-    animation-delay: 0.19s;
-  }
-  .ranking-list li:nth-child(5) > :global(.team-card) {
-    animation-delay: 0.24s;
-  }
-</style>
