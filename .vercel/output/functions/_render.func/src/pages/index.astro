@@ -5,12 +5,20 @@ import ScoreboardLive from "../components/ScoreboardLive";
 import { supabase } from "../db/supabase.js";
 
 // ── Fetch inicial server-side (SSR) ──────────────────────────────────────────
-const { data: rawTeams, error } = await supabase
-  .from("teams")
-  .select("id, name, color, members, scores(phase_id, status, points)")
-  .order("id");
-
-if (error) console.error("Error loading teams:", error);
+let rawTeams: any[] = [];
+try {
+  const { data, error } = await supabase
+    .from("teams")
+    .select("id, name, color, members, scores(phase_id, status, points)")
+    .order("id");
+  if (error) {
+    console.error("Error loading teams:", error);
+  } else {
+    rawTeams = data || [];
+  }
+} catch (e) {
+  console.error("Fetch exception in index.astro:", e);
+}
 
 const initialTeams = (rawTeams ?? []).map((row: any) => ({
   id: row.id,

@@ -4,7 +4,7 @@ import { g as getSortedTeams, t as totalScore, a as getCurrentPhase, $ as $$Base
 import { jsxs, jsx, Fragment } from 'react/jsx-runtime';
 import { useState, useCallback, useEffect } from 'react';
 import { createClient } from '@supabase/supabase-js';
-import { s as supabase$1 } from '../chunks/supabase_BwOqVcUI.mjs';
+import { s as supabase$1 } from '../chunks/supabase_Dumwzhpz.mjs';
 export { renderers } from '../renderers.mjs';
 
 const url = "https://nmmaavlzgcywpceuypzn.supabase.co";
@@ -300,8 +300,17 @@ function ScoreboardLive({ initialTeams }) {
 }
 
 const $$Index = createComponent(async ($$result, $$props, $$slots) => {
-  const { data: rawTeams, error } = await supabase$1.from("teams").select("id, name, color, members, scores(phase_id, status, points)").order("id");
-  if (error) console.error("Error loading teams:", error);
+  let rawTeams = [];
+  try {
+    const { data, error } = await supabase$1.from("teams").select("id, name, color, members, scores(phase_id, status, points)").order("id");
+    if (error) {
+      console.error("Error loading teams:", error);
+    } else {
+      rawTeams = data || [];
+    }
+  } catch (e) {
+    console.error("Fetch exception in index.astro:", e);
+  }
   const initialTeams = (rawTeams ?? []).map((row) => ({
     id: row.id,
     name: row.name,

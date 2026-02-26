@@ -5,12 +5,20 @@ import { PHASES, totalScore } from "../lib/mockData";
 import { supabase } from "../db/supabase.js";
 
 // ── Fetch teams + scores from Supabase ──────────────────────────
-const { data: rawTeams, error } = await supabase
-  .from("teams")
-  .select("id, name, color, members, scores(phase_id, status, points)")
-  .order("id");
-
-if (error) console.error("Admin fetch error:", error);
+let rawTeams: any[] = [];
+try {
+  const { data, error } = await supabase
+    .from("teams")
+    .select("id, name, color, members, scores(phase_id, status, points)")
+    .order("id");
+  if (error) {
+    console.error("Admin fetch error:", error);
+  } else {
+    rawTeams = data || [];
+  }
+} catch (e) {
+  console.error("Fetch exception in admin.astro:", e);
+}
 
 const teams = (rawTeams ?? []).map((row: any) => ({
   id: row.id,

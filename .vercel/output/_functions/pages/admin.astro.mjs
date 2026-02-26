@@ -1,7 +1,7 @@
 import { e as createComponent, r as renderTemplate, k as defineScriptVars, l as renderComponent, m as maybeRenderHead, g as addAttribute } from '../chunks/astro/server_CwtUBU6d.mjs';
 import 'piccolore';
 import { P as PHASES, $ as $$BaseLayout } from '../chunks/mockData_B_BV1TJC.mjs';
-import { s as supabase } from '../chunks/supabase_BwOqVcUI.mjs';
+import { s as supabase } from '../chunks/supabase_Dumwzhpz.mjs';
 /* empty css                                 */
 export { renderers } from '../renderers.mjs';
 
@@ -10,8 +10,17 @@ var __defProp = Object.defineProperty;
 var __template = (cooked, raw) => __freeze(__defProp(cooked, "raw", { value: __freeze(raw || cooked.slice()) }));
 var _a;
 const $$Admin = createComponent(async ($$result, $$props, $$slots) => {
-  const { data: rawTeams, error } = await supabase.from("teams").select("id, name, color, members, scores(phase_id, status, points)").order("id");
-  if (error) console.error("Admin fetch error:", error);
+  let rawTeams = [];
+  try {
+    const { data, error } = await supabase.from("teams").select("id, name, color, members, scores(phase_id, status, points)").order("id");
+    if (error) {
+      console.error("Admin fetch error:", error);
+    } else {
+      rawTeams = data || [];
+    }
+  } catch (e) {
+    console.error("Fetch exception in admin.astro:", e);
+  }
   const teams = (rawTeams ?? []).map((row) => ({
     id: row.id,
     name: row.name,
