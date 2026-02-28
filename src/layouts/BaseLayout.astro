@@ -25,28 +25,6 @@ const { title, activePage } = Astro.props;
 
       <nav class="nav-tabs" aria-label="Navegación principal">
         <a
-          href="/"
-          class:list={["nav-tab", { active: activePage === "scoreboard" }]}
-          aria-current={activePage === "scoreboard" ? "page" : undefined}
-        >
-          <svg
-            width="14"
-            height="14"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            stroke-width="2.5"
-            style="margin-right:6px"
-          >
-            <rect x="18" y="3" width="4" height="18"></rect><rect
-              x="10"
-              y="8"
-              width="4"
-              height="13"></rect><rect x="2" y="13" width="4" height="8"></rect>
-          </svg>
-          Marcador
-        </a>
-        <a
           href="/admin"
           class:list={["nav-tab", { active: activePage === "admin" }]}
           aria-current={activePage === "admin" ? "page" : undefined}
