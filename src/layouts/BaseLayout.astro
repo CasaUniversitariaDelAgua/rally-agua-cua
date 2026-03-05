@@ -8,7 +8,7 @@ export interface Props {
 const { title, activePage } = Astro.props;
 ---
 
-<!doctype html>
+<!DOCTYPE html>
 <html lang="es">
   <head>
     <meta charset="UTF-8" />
@@ -21,31 +21,9 @@ const { title, activePage } = Astro.props;
   <body>
     <!-- ── NAVBAR ── -->
     <header class="nav">
-      <div class="nav-logo">RALLY<span>X</span></div>
+      <div class="nav-logo">Rally <span>ciclo del agua</span></div>
 
       <nav class="nav-tabs" aria-label="Navegación principal">
-        <a
-          href="/"
-          class:list={["nav-tab", { active: activePage === "scoreboard" }]}
-          aria-current={activePage === "scoreboard" ? "page" : undefined}
-        >
-          <svg
-            width="14"
-            height="14"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            stroke-width="2.5"
-            style="margin-right:6px"
-          >
-            <rect x="18" y="3" width="4" height="18"></rect><rect
-              x="10"
-              y="8"
-              width="4"
-              height="13"></rect><rect x="2" y="13" width="4" height="8"></rect>
-          </svg>
-          Marcador
-        </a>
         <a
           href="/admin"
           class:list={["nav-tab", { active: activePage === "admin" }]}
@@ -78,164 +56,161 @@ const { title, activePage } = Astro.props;
     <main>
       <slot />
     </main>
+    <style is:global>
+      @import url("https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Barlow+Condensed:wght@400;600;700&family=Barlow:wght@400;500&display=swap");
+
+      :root {
+        --dirt: #c4a35a;
+        --dirt-dark: #8b6914;
+        --earth: #3d2b1f;
+        --bark: #2a1e15;
+        --moss: #4a5c3a;
+        --moss-light: #6b7f55;
+        --rust: #b84a1e;
+        --sand: #e8d5a3;
+        --fog: #d4c9b0;
+        --ash: #f2ede0;
+        --ink: #1a1208;
+      }
+
+      *,
+      *::before,
+      *::after {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+      }
+
+      body {
+        font-family: "Barlow", sans-serif;
+        background: var(--bark);
+        color: var(--ash);
+        min-height: 100vh;
+        overflow-x: hidden;
+      }
+
+      /* Noise texture */
+      body::before {
+        content: "";
+        position: fixed;
+        inset: 0;
+        background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='400' height='400'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.75' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='400' height='400' filter='url(%23n)' opacity='0.06'/%3E%3C/svg%3E");
+        pointer-events: none;
+        z-index: 0;
+        opacity: 0.35;
+      }
+
+      main {
+        position: relative;
+        z-index: 1;
+      }
+    </style>
+
+    <style>
+      /* ── NAV ── */
+      .nav {
+        position: relative;
+        z-index: 10;
+        display: flex;
+        align-items: center;
+        padding: 0 2rem;
+        background: var(--earth);
+        border-bottom: 3px solid var(--dirt);
+        height: 64px;
+        gap: 2rem;
+      }
+
+      .nav-logo {
+        font-family: "Bebas Neue", sans-serif;
+        font-size: 1.8rem;
+        letter-spacing: 0.1em;
+        color: var(--dirt);
+        text-shadow: 0 0 20px rgba(196, 163, 90, 0.3);
+        flex-shrink: 0;
+      }
+      .nav-logo span {
+        color: var(--rust);
+      }
+
+      .nav-tabs {
+        display: flex;
+        height: 100%;
+        gap: 0;
+      }
+
+      .nav-tab {
+        font-family: "Barlow Condensed", sans-serif;
+        font-size: 0.85rem;
+        font-weight: 700;
+        letter-spacing: 0.15em;
+        text-transform: uppercase;
+        text-decoration: none;
+        padding: 0 1.4rem;
+        height: 100%;
+        display: flex;
+        align-items: center;
+        color: var(--fog);
+        border-bottom: 3px solid transparent;
+        margin-bottom: -3px;
+        transition: color 0.2s, background 0.2s;
+      }
+      .nav-tab:hover {
+        color: var(--sand);
+        background: rgba(196, 163, 90, 0.05);
+      }
+      .nav-tab.active {
+        color: var(--dirt);
+        border-bottom-color: var(--dirt);
+        background: rgba(196, 163, 90, 0.08);
+      }
+
+      .live-badge {
+        display: flex;
+        align-items: center;
+        gap: 0.4rem;
+        font-family: "Barlow Condensed", sans-serif;
+        font-size: 0.72rem;
+        font-weight: 700;
+        letter-spacing: 0.12em;
+        text-transform: uppercase;
+        color: var(--moss-light);
+        flex-shrink: 0;
+        margin-left: auto;
+      }
+
+      .live-dot {
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+        background: #5cdb5c;
+        box-shadow: 0 0 8px #5cdb5c;
+        animation: blink 1.6s ease-in-out infinite;
+      }
+
+      @keyframes blink {
+        0%,
+        100% {
+          opacity: 1;
+          transform: scale(1);
+        }
+        50% {
+          opacity: 0.4;
+          transform: scale(0.75);
+        }
+      }
+
+      @media (max-width: 480px) {
+        .nav {
+          padding: 0 1rem;
+        }
+        .nav-tab {
+          padding: 0 0.9rem;
+          font-size: 0.75rem;
+        }
+        .live-badge {
+          display: none;
+        }
+      }
+    </style>
   </body>
 </html>
-
-<style is:global>
-  @import url("https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Barlow+Condensed:wght@400;600;700&family=Barlow:wght@400;500&display=swap");
-
-  :root {
-    --dirt: #c4a35a;
-    --dirt-dark: #8b6914;
-    --earth: #3d2b1f;
-    --bark: #2a1e15;
-    --moss: #4a5c3a;
-    --moss-light: #6b7f55;
-    --rust: #b84a1e;
-    --sand: #e8d5a3;
-    --fog: #d4c9b0;
-    --ash: #f2ede0;
-    --ink: #1a1208;
-  }
-
-  *,
-  *::before,
-  *::after {
-    box-sizing: border-box;
-    margin: 0;
-    padding: 0;
-  }
-
-  body {
-    font-family: "Barlow", sans-serif;
-    background: var(--bark);
-    color: var(--ash);
-    min-height: 100vh;
-    overflow-x: hidden;
-  }
-
-  /* Noise texture */
-  body::before {
-    content: "";
-    position: fixed;
-    inset: 0;
-    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='400' height='400'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.75' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='400' height='400' filter='url(%23n)' opacity='0.06'/%3E%3C/svg%3E");
-    pointer-events: none;
-    z-index: 0;
-    opacity: 0.35;
-  }
-
-  main {
-    position: relative;
-    z-index: 1;
-  }
-</style>
-
-<style>
-  /* ── NAV ── */
-  .nav {
-    position: relative;
-    z-index: 10;
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    padding: 0 2rem;
-    background: var(--earth);
-    border-bottom: 3px solid var(--dirt);
-    height: 64px;
-    gap: 1rem;
-  }
-
-  .nav-logo {
-    font-family: "Bebas Neue", sans-serif;
-    font-size: 1.8rem;
-    letter-spacing: 0.1em;
-    color: var(--dirt);
-    text-shadow: 0 0 20px rgba(196, 163, 90, 0.3);
-    flex-shrink: 0;
-  }
-  .nav-logo span {
-    color: var(--rust);
-  }
-
-  .nav-tabs {
-    display: flex;
-    height: 100%;
-    gap: 0;
-  }
-
-  .nav-tab {
-    font-family: "Barlow Condensed", sans-serif;
-    font-size: 0.85rem;
-    font-weight: 700;
-    letter-spacing: 0.15em;
-    text-transform: uppercase;
-    text-decoration: none;
-    padding: 0 1.4rem;
-    height: 100%;
-    display: flex;
-    align-items: center;
-    color: var(--fog);
-    border-bottom: 3px solid transparent;
-    margin-bottom: -3px;
-    transition:
-      color 0.2s,
-      background 0.2s;
-  }
-  .nav-tab:hover {
-    color: var(--sand);
-    background: rgba(196, 163, 90, 0.05);
-  }
-  .nav-tab.active {
-    color: var(--dirt);
-    border-bottom-color: var(--dirt);
-    background: rgba(196, 163, 90, 0.08);
-  }
-
-  .live-badge {
-    display: flex;
-    align-items: center;
-    gap: 0.4rem;
-    font-family: "Barlow Condensed", sans-serif;
-    font-size: 0.72rem;
-    font-weight: 700;
-    letter-spacing: 0.12em;
-    text-transform: uppercase;
-    color: var(--moss-light);
-    flex-shrink: 0;
-  }
-
-  .live-dot {
-    width: 8px;
-    height: 8px;
-    border-radius: 50%;
-    background: #5cdb5c;
-    box-shadow: 0 0 8px #5cdb5c;
-    animation: blink 1.6s ease-in-out infinite;
-  }
-
-  @keyframes blink {
-    0%,
-    100% {
-      opacity: 1;
-      transform: scale(1);
-    }
-    50% {
-      opacity: 0.4;
-      transform: scale(0.75);
-    }
-  }
-
-  @media (max-width: 480px) {
-    .nav {
-      padding: 0 1rem;
-    }
-    .nav-tab {
-      padding: 0 0.9rem;
-      font-size: 0.75rem;
-    }
-    .live-badge {
-      display: none;
-    }
-  }
-</style>

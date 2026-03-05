@@ -1,0 +1,396 @@
+---
+// src/pages/registro.astro
+import RegistrationForm from "../components/RegistrationForm";
+---
+
+<!doctype html>
+<html lang="es">
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <title>Inscripción — Rally del Ciclo del Agua</title>
+        <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+        <link rel="preconnect" href="https://fonts.googleapis.com" />
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+        <link
+            href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Barlow+Condensed:wght@400;600;700&family=Barlow:wght@400;500&display=swap"
+            rel="stylesheet"
+        />
+    </head>
+    <body>
+        <!-- ── HEADER (standalone, sin links al marcador) ── -->
+        <header class="nav">
+            <div class="nav-logo">RALLY<span>CUA</span></div>
+            <div class="live-badge">
+                <span class="live-dot" aria-hidden="true"></span>
+                21 Mar · 9AM
+            </div>
+        </header>
+
+        <!-- ── MAIN ── -->
+        <main class="page-main">
+            <!-- Event hero -->
+            <section class="event-hero">
+                <div class="event-hero-inner">
+                    <p class="event-eyebrow">
+                        Casa Universitaria del Agua · 2025
+                    </p>
+                    <h1 class="event-title">
+                        Rally del<br /><em>Ciclo del Agua</em>
+                    </h1>
+                    <div class="event-divider" aria-hidden="true"></div>
+                    <p class="event-tagline">
+                        El agua es vida, y hoy más que nunca necesita de quienes
+                        estén dispuestos a cuidarla.
+                    </p>
+                    <div class="event-date-badge">
+                        <span class="date-icon">📅</span>
+                        <span
+                            >Sábado <strong>21 de marzo</strong> · <strong
+                                >9:00 AM</strong
+                            ></span
+                        >
+                    </div>
+                    <p class="event-cta-text">
+                        Una experiencia divertida, educativa y llena de retos
+                        donde aprenderás, jugarás y te convertirás en <strong
+                            >GUARDIÁN</strong
+                        > del recurso más valioso del planeta.
+                    </p>
+                </div>
+
+                <!-- Decorative drops -->
+                <div class="drops" aria-hidden="true">
+                    <div class="drop drop-1">💧</div>
+                    <div class="drop drop-2">🌊</div>
+                    <div class="drop drop-3">💧</div>
+                </div>
+            </section>
+
+            <!-- Registration card -->
+            <section class="form-section">
+                <div class="form-card">
+                    <div class="form-header">
+                        <h2 class="form-title">¡Inscríbete aquí!</h2>
+                        <p class="form-subtitle">
+                            Juntos hacemos que cada gota cuente. Los campos
+                            marcados con <span class="star">*</span> son obligatorios.
+                        </p>
+                    </div>
+
+                    <RegistrationForm client:load />
+                </div>
+            </section>
+        </main>
+    </body>
+</html>
+
+<style is:global>
+    :root {
+        --dirt: #c4a35a;
+        --dirt-dark: #8b6914;
+        --earth: #3d2b1f;
+        --bark: #2a1e15;
+        --moss: #4a5c3a;
+        --moss-light: #6b7f55;
+        --rust: #b84a1e;
+        --sand: #e8d5a3;
+        --fog: #d4c9b0;
+        --ash: #f2ede0;
+        --ink: #1a1208;
+    }
+
+    *,
+    *::before,
+    *::after {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+    }
+
+    body {
+        font-family: "Barlow", sans-serif;
+        background: var(--bark);
+        color: var(--ash);
+        min-height: 100vh;
+        overflow-x: hidden;
+    }
+
+    body::before {
+        content: "";
+        position: fixed;
+        inset: 0;
+        background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='400' height='400'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.75' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='400' height='400' filter='url(%23n)' opacity='0.06'/%3E%3C/svg%3E");
+        pointer-events: none;
+        z-index: 0;
+        opacity: 0.35;
+    }
+
+    main {
+        position: relative;
+        z-index: 1;
+    }
+</style>
+
+<style>
+    /* ── NAV ── */
+    .nav {
+        position: relative;
+        z-index: 10;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 0 2rem;
+        background: var(--earth);
+        border-bottom: 3px solid var(--dirt);
+        height: 64px;
+        gap: 1rem;
+    }
+    .nav-logo {
+        font-family: "Bebas Neue", sans-serif;
+        font-size: 1.8rem;
+        letter-spacing: 0.1em;
+        color: var(--dirt);
+        text-decoration: none;
+        text-shadow: 0 0 20px rgba(196, 163, 90, 0.3);
+        flex-shrink: 0;
+    }
+    .nav-logo span {
+        color: var(--rust);
+    }
+    .nav-tabs {
+        display: flex;
+        height: 100%;
+    }
+    .nav-tab {
+        font-family: "Barlow Condensed", sans-serif;
+        font-size: 0.85rem;
+        font-weight: 700;
+        letter-spacing: 0.15em;
+        text-transform: uppercase;
+        text-decoration: none;
+        padding: 0 1.4rem;
+        height: 100%;
+        display: flex;
+        align-items: center;
+        color: var(--fog);
+        border-bottom: 3px solid transparent;
+        margin-bottom: -3px;
+        transition:
+            color 0.2s,
+            background 0.2s;
+    }
+    .nav-tab:hover {
+        color: var(--sand);
+        background: rgba(196, 163, 90, 0.05);
+    }
+    .nav-tab.active {
+        color: var(--dirt);
+        border-bottom-color: var(--dirt);
+        background: rgba(196, 163, 90, 0.08);
+    }
+    .live-badge {
+        display: flex;
+        align-items: center;
+        gap: 0.4rem;
+        font-family: "Barlow Condensed", sans-serif;
+        font-size: 0.72rem;
+        font-weight: 700;
+        letter-spacing: 0.12em;
+        text-transform: uppercase;
+        color: var(--dirt);
+        flex-shrink: 0;
+    }
+    .live-dot {
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+        background: var(--dirt);
+        box-shadow: 0 0 8px var(--dirt);
+        animation: blink 1.6s ease-in-out infinite;
+    }
+    @keyframes blink {
+        0%,
+        100% {
+            opacity: 1;
+            transform: scale(1);
+        }
+        50% {
+            opacity: 0.4;
+            transform: scale(0.75);
+        }
+    }
+
+    /* ── PAGE ── */
+    .page-main {
+        max-width: 760px;
+        margin: 0 auto;
+        padding: 3rem 1.5rem 5rem;
+    }
+
+    /* ── EVENT HERO ── */
+    .event-hero {
+        text-align: center;
+        margin-bottom: 3rem;
+        position: relative;
+    }
+    .event-hero-inner {
+        position: relative;
+        z-index: 1;
+    }
+    .event-eyebrow {
+        font-family: "Barlow Condensed", sans-serif;
+        font-size: 0.78rem;
+        font-weight: 600;
+        letter-spacing: 0.35em;
+        text-transform: uppercase;
+        color: var(--dirt);
+        margin-bottom: 0.8rem;
+    }
+    .event-title {
+        font-family: "Bebas Neue", sans-serif;
+        font-size: clamp(2.8rem, 9vw, 5.5rem);
+        letter-spacing: 0.06em;
+        line-height: 0.92;
+        color: var(--sand);
+        text-shadow:
+            3px 3px 0 var(--dirt-dark),
+            6px 6px 0 rgba(0, 0, 0, 0.25);
+        margin-bottom: 0.5rem;
+    }
+    .event-title em {
+        font-style: normal;
+        color: #4a9ebf;
+    }
+    .event-divider {
+        width: 80px;
+        height: 3px;
+        background: linear-gradient(
+            90deg,
+            transparent,
+            var(--dirt),
+            transparent
+        );
+        margin: 1rem auto;
+    }
+    .event-tagline {
+        font-size: 1rem;
+        line-height: 1.65;
+        color: var(--fog);
+        max-width: 480px;
+        margin: 0 auto 1.4rem;
+    }
+    .event-date-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
+        background: rgba(196, 163, 90, 0.12);
+        border: 1.5px solid rgba(196, 163, 90, 0.3);
+        border-radius: 100px;
+        padding: 0.45rem 1.2rem;
+        font-family: "Barlow Condensed", sans-serif;
+        font-size: 0.9rem;
+        letter-spacing: 0.08em;
+        color: var(--sand);
+        margin-bottom: 1.2rem;
+    }
+    .date-icon {
+        font-size: 1rem;
+    }
+    .event-cta-text {
+        font-size: 0.92rem;
+        line-height: 1.65;
+        color: var(--fog);
+        opacity: 0.85;
+        max-width: 500px;
+        margin: 0 auto;
+    }
+
+    /* Decorative drops */
+    .drops {
+        position: absolute;
+        inset: 0;
+        pointer-events: none;
+        overflow: hidden;
+    }
+    .drop {
+        position: absolute;
+        font-size: 2rem;
+        opacity: 0.08;
+        animation: floatDrop 6s ease-in-out infinite;
+    }
+    .drop-1 {
+        top: 10%;
+        left: 5%;
+        animation-delay: 0s;
+    }
+    .drop-2 {
+        top: 40%;
+        right: 4%;
+        font-size: 2.8rem;
+        animation-delay: 2s;
+    }
+    .drop-3 {
+        bottom: 5%;
+        left: 15%;
+        animation-delay: 4s;
+    }
+    @keyframes floatDrop {
+        0%,
+        100% {
+            transform: translateY(0) rotate(-5deg);
+        }
+        50% {
+            transform: translateY(-12px) rotate(5deg);
+        }
+    }
+
+    /* ── FORM CARD ── */
+    .form-card {
+        background: rgba(61, 43, 31, 0.55);
+        border: 1.5px solid rgba(196, 163, 90, 0.18);
+        border-radius: 16px;
+        padding: 2.4rem 2.4rem 2.8rem;
+        backdrop-filter: blur(4px);
+        box-shadow: 0 12px 40px rgba(0, 0, 0, 0.35);
+    }
+    .form-header {
+        margin-bottom: 2rem;
+    }
+    .form-title {
+        font-family: "Bebas Neue", sans-serif;
+        font-size: 2rem;
+        letter-spacing: 0.08em;
+        color: var(--dirt);
+        margin-bottom: 0.5rem;
+    }
+    .form-subtitle {
+        font-size: 0.87rem;
+        color: var(--fog);
+        opacity: 0.8;
+        line-height: 1.55;
+    }
+    .star {
+        color: var(--rust);
+        font-weight: bold;
+    }
+
+    @media (max-width: 480px) {
+        .nav {
+            padding: 0 1rem;
+        }
+        .nav-tab {
+            padding: 0 0.9rem;
+            font-size: 0.75rem;
+        }
+        .live-badge {
+            display: none;
+        }
+        .form-card {
+            padding: 1.6rem 1.2rem 2rem;
+        }
+        .page-main {
+            padding: 2rem 1rem 4rem;
+        }
+    }
+</style>
