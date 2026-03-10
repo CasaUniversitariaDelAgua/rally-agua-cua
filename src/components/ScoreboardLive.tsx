@@ -6,242 +6,261 @@ import { getSortedTeams, totalScore, getCurrentPhase } from "../lib/mockData";
 import type { Team } from "../lib/mockData";
 
 interface Props {
-    initialTeams: Team[];
+  initialTeams: Team[];
 }
 
 // ── Helpers ────────────────────────────────────────────────────────────────
 
 async function fetchTeams(): Promise<Team[]> {
-    const { data, error } = await supabase
-        .from("teams")
-        .select("id, name, color, members, scores(phase_id, status, points)")
-        .order("id");
+  const { data, error } = await supabase
+    .from("teams")
+    .select("id, name, color, members, scores(phase_id, status, points)")
+    .order("id");
 
-    if (error || !data) {
-        console.error("fetchTeams error:", error);
-        return [];
-    }
+  if (error || !data) {
+    console.error("fetchTeams error:", error);
+    return [];
+  }
 
-    return data.map((row: any) => ({
-        id: row.id,
-        name: row.name,
-        color: row.color,
-        members: Array.isArray(row.members) ? row.members : [],
-        phases: [1, 2, 3, 4, 5].map((phaseId) => {
-            const s = (row.scores ?? []).find((sc: any) => sc.phase_id === phaseId);
-            return {
-                phaseId,
-                status: s?.status ?? "pending",
-                points: s?.points ?? 0,
-            };
-        }),
-    }));
+  return data.map((row: any) => ({
+    id: row.id,
+    name: row.name,
+    color: row.color,
+    members: Array.isArray(row.members) ? row.members : [],
+    phases: [1, 2, 3, 4, 5].map((phaseId) => {
+      const s = (row.scores ?? []).find((sc: any) => sc.phase_id === phaseId);
+      return {
+        phaseId,
+        status: s?.status ?? "pending",
+        points: s?.points ?? 0,
+      };
+    }),
+  }));
 }
 
 const PHASES = [
-    { id: 1, name: "Fase 1" },
-    { id: 2, name: "Fase 2" },
-    { id: 3, name: "Fase 3" },
-    { id: 4, name: "Fase 4" },
-    { id: 5, name: "Fase 5" },
+  { id: 1, name: "Fase 1" },
+  { id: 2, name: "Fase 2" },
+  { id: 3, name: "Fase 3" },
+  { id: 4, name: "Fase 4" },
+  { id: 5, name: "Fase 5" },
 ];
 
 // ── Sub-components ──────────────────────────────────────────────────────────
 
 function PhasePills({ teams }: { teams: Team[] }) {
-    const statuses = PHASES.map((phase) => {
-        const allDone = teams.every((t) => t.phases[phase.id - 1]?.status === "done");
-        const anyDoing = teams.some((t) => t.phases[phase.id - 1]?.status === "doing");
-        if (allDone) return "completed";
-        if (anyDoing) return "active";
-        return "pending";
-    });
-
-    return (
-        <div className="phase-pills">
-            {PHASES.map((phase, i) => {
-                const s = statuses[i];
-                const icon = s === "completed" ? "✓" : s === "active" ? "⚡" : "○";
-                return (
-                    <span key={phase.id} className={`phase-pill ${s}`}>
-                        {icon} {phase.name}
-                    </span>
-                );
-            })}
-        </div>
+  const statuses = PHASES.map((phase) => {
+    const allDone = teams.every(
+      (t) => t.phases[phase.id - 1]?.status === "done",
     );
+    const anyDoing = teams.some(
+      (t) => t.phases[phase.id - 1]?.status === "doing",
+    );
+    if (allDone) return "completed";
+    if (anyDoing) return "active";
+    return "pending";
+  });
+
+  return (
+    <div className="phase-pills">
+      {PHASES.map((phase, i) => {
+        const s = statuses[i];
+        const icon = s === "completed" ? "✓" : s === "active" ? "⚡" : "○";
+        return (
+          <span key={phase.id} className={`phase-pill ${s}`}>
+            {icon} {phase.name}
+          </span>
+        );
+      })}
+    </div>
+  );
 }
 
 function TeamCard({ team, rank }: { team: Team; rank: number }) {
-    const score = totalScore(team);
-    const cp = getCurrentPhase(team);
-    const isFirst = rank === 1;
+  const score = totalScore(team);
+  const cp = getCurrentPhase(team);
+  const isFirst = rank === 1;
 
-    return (
-        <article
-            className={`team-card${isFirst ? " team-card--first" : ""}`}
-            style={{ "--team-color": team.color } as React.CSSProperties}
-            aria-label={`${team.name}, posición ${rank}, ${score} puntos`}
-        >
-            <div className="rank">{isFirst ? "🏆" : rank}</div>
+  return (
+    <article
+      className={`team-card${isFirst ? " team-card--first" : ""}`}
+      style={{ "--team-color": team.color } as React.CSSProperties}
+      aria-label={`${team.name}, posición ${rank}, ${score} puntos`}
+    >
+      <div className="rank">{isFirst ? "🏆" : rank}</div>
 
-            <div className="info">
-                <div className="team-name">{team.name}</div>
-                <div className="members">{team.members.join(" · ")}</div>
-            </div>
+      <div className="info">
+        <div className="team-name">{team.name}</div>
+        <div className="members">{team.members.join(" · ")}</div>
+      </div>
 
-            <div className="phase-block">
-                <span className={`phase-tag ${cp.phaseClass}`}>{cp.label}</span>
-                <div className="phase-dots">
-                    {team.phases.map((p) => (
-                        <span
-                            key={p.phaseId}
-                            className={`dot${p.status === "done" ? " done" : p.status === "doing" ? " active" : ""}`}
-                        />
-                    ))}
-                </div>
-            </div>
+      <div className="phase-block">
+        <span className={`phase-tag ${cp.phaseClass}`}>{cp.label}</span>
+        <div className="phase-dots">
+          {team.phases.map((p) => (
+            <span
+              key={p.phaseId}
+              className={`dot${p.status === "done" ? " done" : p.status === "doing" ? " active" : ""}`}
+            />
+          ))}
+        </div>
+      </div>
 
-            <div className="score-block">
-                <span className="score-value">{score}</span>
-                <span className="score-label">pts</span>
-            </div>
-        </article>
-    );
+      <div className="score-block">
+        <span className="score-value">{score}</span>
+        <span className="score-label">pts</span>
+      </div>
+    </article>
+  );
 }
 
 function ProgressBars({ teams }: { teams: Team[] }) {
-    const sorted = getSortedTeams(teams);
-    const maxPts = Math.max(...teams.map((t) => totalScore(t)), 1);
+  const sorted = getSortedTeams(teams);
+  const maxPts = Math.max(...teams.map((t) => totalScore(t)), 1);
 
-    return (
-        <section className="progress-section">
-            <h2 className="section-label">
-                Progreso general<span className="section-line" />
-            </h2>
-            <div className="bars">
-                {sorted.map((team) => {
-                    const score = totalScore(team);
-                    const pct = Math.round((score / maxPts) * 100);
-                    return (
-                        <div key={team.id} className="bar-row">
-                            <span className="bar-name" style={{ color: team.color }}>
-                                {team.name}
-                            </span>
-                            <div className="bar-track">
-                                <div
-                                    className="bar-fill"
-                                    style={{
-                                        width: `${pct}%`,
-                                        "--fill-a": `${team.color}88`,
-                                        "--fill-b": team.color,
-                                    } as React.CSSProperties}
-                                />
-                            </div>
-                            <span className="bar-pct">{pct}%</span>
-                        </div>
-                    );
-                })}
+  return (
+    <section className="progress-section">
+      <h2 className="section-label">
+        Progreso general
+        <span className="section-line" />
+      </h2>
+      <div className="bars">
+        {sorted.map((team) => {
+          const score = totalScore(team);
+          const pct = Math.round((score / maxPts) * 100);
+          return (
+            <div key={team.id} className="bar-row">
+              <span className="bar-name" style={{ color: team.color }}>
+                {team.name}
+              </span>
+              <div className="bar-track">
+                <div
+                  className="bar-fill"
+                  style={
+                    {
+                      width: `${pct}%`,
+                      "--fill-a": `${team.color}88`,
+                      "--fill-b": team.color,
+                    } as React.CSSProperties
+                  }
+                />
+              </div>
+              <span className="bar-pct">{pct}%</span>
             </div>
-        </section>
-    );
+          );
+        })}
+      </div>
+    </section>
+  );
 }
 
 // ── Main island ─────────────────────────────────────────────────────────────
 
 export default function ScoreboardLive({ initialTeams }: Props) {
-    const [teams, setTeams] = useState<Team[]>(initialTeams);
-    const [updating, setUpdating] = useState(false);
-    const [lastUpdate, setLastUpdate] = useState(
-        new Date().toLocaleTimeString("es-MX", { hour: "2-digit", minute: "2-digit" })
-    );
+  const [teams, setTeams] = useState<Team[]>(initialTeams);
+  const [updating, setUpdating] = useState(false);
+  const [lastUpdate, setLastUpdate] = useState(
+    new Date().toLocaleTimeString("es-MX", {
+      hour: "2-digit",
+      minute: "2-digit",
+    }),
+  );
 
-    const refresh = useCallback(async () => {
-        setUpdating(true);
-        const fresh = await fetchTeams();
-        if (fresh.length > 0) {
-            setTeams(fresh);
-            setLastUpdate(
-                new Date().toLocaleTimeString("es-MX", { hour: "2-digit", minute: "2-digit" })
-            );
-        }
-        setUpdating(false);
-    }, []);
+  const refresh = useCallback(async () => {
+    setUpdating(true);
+    const fresh = await fetchTeams();
+    if (fresh.length > 0) {
+      setTeams(fresh);
+      setLastUpdate(
+        new Date().toLocaleTimeString("es-MX", {
+          hour: "2-digit",
+          minute: "2-digit",
+        }),
+      );
+    }
+    setUpdating(false);
+  }, []);
 
-    useEffect(() => {
-        // Subscribe to any change in scores table
-        const channel = supabase
-            .channel("scores-live")
-            .on(
-                "postgres_changes",
-                { event: "*", schema: "public", table: "scores" },
-                () => { refresh(); }
-            )
-            .subscribe();
+  useEffect(() => {
+    // Subscribe to any change in scores table
+    const channel = supabase
+      .channel("scores-live")
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "scores" },
+        () => {
+          refresh();
+        },
+      )
+      .subscribe();
 
-        return () => { supabase.removeChannel(channel); };
-    }, [refresh]);
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [refresh]);
 
-    const sorted = getSortedTeams(teams);
+  const sorted = getSortedTeams(teams);
 
-    return (
-        <div className="scoreboard">
-            {/* Hero */}
-            <header className="hero">
-                <p className="hero-eyebrow">Temporada 2025 · {teams.length} Equipos · 5 Fases</p>
-                <h1 className="hero-title">
-                    RALLY <em>DE</em>
-                    <br />
-                    COMPETENCIA
-                </h1>
-                <div className="hero-divider" />
-                <p className="hero-update">
-                    {updating ? (
-                        <span className="updating-badge">⟳ Actualizando…</span>
-                    ) : (
-                        <>
-                            Última actualización: <time>{lastUpdate}</time>
-                            <span className="live-pill">● EN VIVO</span>
-                        </>
-                    )}
-                </p>
-            </header>
+  return (
+    <div className="scoreboard">
+      {/* Hero */}
+      <header className="hero">
+        <p className="hero-eyebrow">
+          Temporada 2025 · {teams.length} Equipos · 5 Fases
+        </p>
+        <h1 className="hero-title">
+          RALLY <em>DE</em>
+          <br />
+          COMPETENCIA
+        </h1>
+        <div className="hero-divider" />
+        <p className="hero-update">
+          {updating ? (
+            <span className="updating-badge">⟳ Actualizando…</span>
+          ) : (
+            <>
+              Última actualización: <time>{lastUpdate}</time>
+              <span className="live-pill">● EN VIVO</span>
+            </>
+          )}
+        </p>
+      </header>
 
-            {/* Phase pills */}
-            {teams.length > 0 && <PhasePills teams={teams} />}
+      {/* Phase pills */}
+      {teams.length > 0 && <PhasePills teams={teams} />}
 
-            {/* Ranking */}
-            {teams.length === 0 ? (
-                <p className="empty-msg">No hay equipos registrados aún.</p>
-            ) : (
-                <section aria-label="Clasificación de equipos">
-                    <ol className="ranking-list">
-                        {sorted.map((team, i) => (
-                            <li key={team.id} style={{ animationDelay: `${i * 0.05}s` }}>
-                                <TeamCard team={team} rank={i + 1} />
-                            </li>
-                        ))}
-                    </ol>
-                </section>
-            )}
+      {/* Ranking */}
+      {teams.length === 0 ? (
+        <p className="empty-msg">No hay equipos registrados aún.</p>
+      ) : (
+        <section aria-label="Clasificación de equipos">
+          <ol className="ranking-list">
+            {sorted.map((team, i) => (
+              <li key={team.id} style={{ animationDelay: `${i * 0.05}s` }}>
+                <TeamCard team={team} rank={i + 1} />
+              </li>
+            ))}
+          </ol>
+        </section>
+      )}
 
-            {/* Progress bars */}
-            {teams.length > 0 && <ProgressBars teams={teams} />}
+      {/* Progress bars */}
+      {teams.length > 0 && <ProgressBars teams={teams} />}
 
-            <style>{`
+      <style>{`
         /* ── Scoreboard ── */
         .scoreboard { max-width: 900px; margin: 0 auto; padding: 2.5rem 1.5rem 4rem; }
 
         /* ── Hero ── */
         .hero { text-align: center; margin-bottom: 2.5rem; }
         .hero-eyebrow {
-          font-family: 'Barlow Condensed', sans-serif;
+          font-family: var(--font-archer);
           font-size: 0.8rem; font-weight: 600;
           letter-spacing: 0.35em; text-transform: uppercase;
           color: var(--dirt); margin-bottom: 0.6rem;
         }
         .hero-title {
-          font-family: 'Bebas Neue', sans-serif;
+          font-family: var(--font-archer);
           font-size: clamp(3.5rem, 10vw, 7.5rem);
           letter-spacing: 0.06em; line-height: 0.9;
           color: var(--sand);
@@ -254,7 +273,7 @@ export default function ScoreboardLive({ initialTeams }: Props) {
           margin: 1rem auto 0.6rem;
         }
         .hero-update {
-          font-family: 'Barlow Condensed', sans-serif;
+          font-family: var(--font-archer);
           font-size: 0.72rem; font-weight: 600;
           letter-spacing: 0.12em; text-transform: uppercase;
           color: rgba(196,163,90,0.45);
@@ -273,7 +292,7 @@ export default function ScoreboardLive({ initialTeams }: Props) {
           gap: 0.5rem; flex-wrap: wrap; margin-bottom: 2.5rem;
         }
         .phase-pill {
-          font-family: 'Barlow Condensed', sans-serif;
+          font-family: var(--font-archer);
           font-size: 0.72rem; font-weight: 700;
           letter-spacing: 0.1em; text-transform: uppercase;
           padding: 0.3rem 0.9rem; border-radius: 2px; border: 1px solid;
@@ -348,6 +367,6 @@ export default function ScoreboardLive({ initialTeams }: Props) {
           .bar-row { grid-template-columns:100px 1fr 48px; }
         }
       `}</style>
-        </div>
-    );
+    </div>
+  );
 }

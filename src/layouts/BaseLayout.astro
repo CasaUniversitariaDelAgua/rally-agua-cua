@@ -8,7 +8,7 @@ export interface Props {
 const { title, activePage } = Astro.props;
 ---
 
-<!DOCTYPE html>
+<!doctype html>
 <html lang="es">
   <head>
     <meta charset="UTF-8" />
@@ -57,20 +57,69 @@ const { title, activePage } = Astro.props;
       <slot />
     </main>
     <style is:global>
-      @import url("https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Barlow+Condensed:wght@400;600;700&family=Barlow:wght@400;500&display=swap");
+      @font-face {
+        font-family: "Archer";
+        src: url("/fonts/ArcherBookPro.otf") format("opentype");
+        font-weight: 400;
+        font-style: normal;
+      }
+      @font-face {
+        font-family: "Archer";
+        src: url("/fonts/ArcherMediumPro.otf") format("opentype");
+        font-weight: 500;
+        font-style: normal;
+      }
+      @font-face {
+        font-family: "Archer";
+        src: url("/fonts/ArcherSemiboldPro.otf") format("opentype");
+        font-weight: 600;
+        font-style: normal;
+      }
+      @font-face {
+        font-family: "Archer";
+        src: url("/fonts/ArcherBoldPro.otf") format("opentype");
+        font-weight: 700;
+        font-style: normal;
+      }
+      @font-face {
+        font-family: "Archer";
+        src: url("/fonts/ArcherLightPro.otf") format("opentype");
+        font-weight: 300;
+        font-style: normal;
+      }
 
       :root {
-        --dirt: #c4a35a;
-        --dirt-dark: #8b6914;
-        --earth: #3d2b1f;
-        --bark: #2a1e15;
-        --moss: #4a5c3a;
-        --moss-light: #6b7f55;
-        --rust: #b84a1e;
-        --sand: #e8d5a3;
-        --fog: #d4c9b0;
-        --ash: #f2ede0;
-        --ink: #1a1208;
+        /* Paleta Acuática / Deep Ocean Theme */
+        --color-oceano-profundo: #061a28; /* bg principal muy oscuro */
+        --color-mar-nocturno: #0e2e46; /* bg de tarjetas, header */
+        --color-azul-brillante: #00e5ff; /* acentos brillantes, texto activo */
+        --color-cian: #00a3cc; /* botones, bordes, estados "doing" */
+        --color-agua-claro: #e0f7fa; /* textos principales, alto contraste */
+        --color-coral: #ff6b6b; /* tonos de alerta, highlights, isotipo */
+        --color-corriente: #005f8c; /* grises/azules intermedios */
+
+        /* Gradients / Variantes */
+        --color-grad-ocean-1: #0a3d62;
+        --color-grad-ocean-2: #05243b;
+        --color-grad-coral-1: #ff8787;
+        --color-grad-coral-2: #fa5252;
+        --color-grad-cyan: #22b8cf;
+
+        /* Fonts */
+        --font-archer: "Archer", serif;
+
+        /* Mapeo de Colores a la Paleta Acuática */
+        --dirt: var(--color-azul-brillante); /* Color principal llamativo */
+        --dirt-dark: var(--color-cian);
+        --earth: var(--color-mar-nocturno); /* Fondos de contenedores/header */
+        --bark: var(--color-oceano-profundo); /* Fondo principal de la página */
+        --moss: var(--color-cian); /* Botones secundarios o completados */
+        --moss-light: var(--color-grad-cyan);
+        --rust: var(--color-coral); /* Isotipo / acento secundario vibrante */
+        --sand: var(--color-agua-claro); /* Títulos, textos muy claros */
+        --fog: #b2dfdb; /* Texto secundario, descriptivo */
+        --ash: #ffffff; /* Texto general */
+        --ink: #000000; /* Texto oscuro sobre botones claros */
       }
 
       *,
@@ -82,7 +131,7 @@ const { title, activePage } = Astro.props;
       }
 
       body {
-        font-family: "Barlow", sans-serif;
+        font-family: var(--font-archer);
         background: var(--bark);
         color: var(--ash);
         min-height: 100vh;
@@ -121,7 +170,8 @@ const { title, activePage } = Astro.props;
       }
 
       .nav-logo {
-        font-family: "Bebas Neue", sans-serif;
+        font-family: var(--font-archer);
+        font-weight: 700;
         font-size: 1.8rem;
         letter-spacing: 0.1em;
         color: var(--dirt);
@@ -139,7 +189,8 @@ const { title, activePage } = Astro.props;
       }
 
       .nav-tab {
-        font-family: "Barlow Condensed", sans-serif;
+        font-family: var(--font-archer);
+        font-weight: 700;
         font-size: 0.85rem;
         font-weight: 700;
         letter-spacing: 0.15em;
@@ -152,7 +203,9 @@ const { title, activePage } = Astro.props;
         color: var(--fog);
         border-bottom: 3px solid transparent;
         margin-bottom: -3px;
-        transition: color 0.2s, background 0.2s;
+        transition:
+          color 0.2s,
+          background 0.2s;
       }
       .nav-tab:hover {
         color: var(--sand);
@@ -168,7 +221,8 @@ const { title, activePage } = Astro.props;
         display: flex;
         align-items: center;
         gap: 0.4rem;
-        font-family: "Barlow Condensed", sans-serif;
+        font-family: var(--font-archer);
+        font-weight: 700;
         font-size: 0.72rem;
         font-weight: 700;
         letter-spacing: 0.12em;
