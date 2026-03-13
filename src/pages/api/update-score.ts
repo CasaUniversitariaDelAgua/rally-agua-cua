@@ -14,17 +14,18 @@ export const POST: APIRoute = async ({ request }) => {
             );
         }
 
-        const { error } = await supabase
+        const { error: updateError, data: updateData } = await supabase
             .from("scores")
             .upsert(
                 { team_id, phase_id: id_fase, status: estatus, points: puntos },
                 { onConflict: "team_id,phase_id" }
-            );
+            )
+            .select();
 
-        if (error) {
-            console.error("update-score error:", error);
+        if (updateError || !updateData || updateData.length === 0) {
+            console.error("update-score error:", updateError);
             return new Response(
-                JSON.stringify({ error: "Error al guardar. " + error.message }),
+                JSON.stringify({ error: "No se pudo guardar la puntuación (posible bloqueo de RLS)." }),
                 { status: 500, headers: { "Content-Type": "application/json" } }
             );
         }

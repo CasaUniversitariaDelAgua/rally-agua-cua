@@ -13,7 +13,7 @@ const getEnvVar = (nombre) => {
 };
 
 const supabaseUrl = getEnvVar("SUPABASE_URL");
-const supabaseKey = getEnvVar("SUPABASE_KEY");
+const supabaseKey = getEnvVar("SUPABASE_SERVICE_ROLE_KEY") || getEnvVar("SUPABASE_KEY");
 
 // Creamos un cliente siempre para no romper los tipos de TS (Astro API routes)
 // Si estamos en build step y no hay vars, usamos valores dummy válidos sintácticamente

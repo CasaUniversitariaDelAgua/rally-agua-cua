@@ -2,6 +2,7 @@
 // Admin endpoint: promote a registration into an active team + initialize scores
 import type { APIRoute } from "astro";
 import { supabase } from "../../db/supabase.js";
+import { sendApprovalEmail } from "../../lib/mailer";
 
 const MAX_TEAMS = 10;
 
@@ -91,10 +92,27 @@ export const POST: APIRoute = async ({ request }) => {
         }
 
         // ── Mark registration as approved ────────────────────────────
-        await supabase
+        const { error: updateError, data: updateData } = await supabase
             .from("registrations")
             .update({ approved_at: new Date().toISOString() })
-            .eq("id", registration_id);
+            .eq("id", registration_id)
+            .select();
+
+        if (updateError || !updateData || updateData.length === 0) {
+             console.error("error marking approved", updateError);
+             return new Response(
+                JSON.stringify({ error: "No se pudo actualizar la inscripción (posible bloqueo de RLS)." }),
+                { status: 500, headers: { "Content-Type": "application/json" } }
+            );
+        }
+
+        // ── Send Welcome Email ───────────────────────────────────────
+        try {
+            await sendApprovalEmail(reg.email, team.name);
+        } catch (emailErr) {
+            console.error("No se pudo enviar el correo a " + reg.email, emailErr);
+            // We dont fail the approval if the email fails.
+        }
 
         return new Response(
             JSON.stringify({ success: true, team }),

@@ -14,7 +14,9 @@
     "@astrojs/react": "^4.4.2",
     "@astrojs/vercel": "^8.0.4",
     "@supabase/supabase-js": "^2.97.0",
+    "@types/nodemailer": "^7.0.11",
     "astro": "^5.18.0",
+    "nodemailer": "^8.0.2",
     "react": "^19.2.4",
     "react-dom": "^19.2.4"
   },
